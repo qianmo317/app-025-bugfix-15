@@ -19,8 +19,10 @@ import {
   checkLight,
   filterFlowLph,
   heaterWatts,
+  formatLightRange,
+  LIGHT_MID_MIN,
+  LIGHT_HIGH_MIN,
 } from '../core/equipment';
-import { LIGHT_LUMEN_PER_M2 } from '../core/equipment';
 
 export default function Water({ plan }: { plan: Plan }) {
   const w = plan.water;
@@ -151,7 +153,7 @@ export default function Water({ plan }: { plan: Plan }) {
             光强 = {actualLumens} lm ÷ {areaM2.toFixed(2)}m² ={' '}
             <b>{(actualLumens / areaM2).toFixed(0)} lm/m²</b> → 判定：
             <b data-testid="light-level">{level === 'low' ? '低光' : level === 'mid' ? '中光' : '高光'}</b>
-            （阈值：低 &lt;2500 / 中 2500~5000 / 高 &gt;5000，经验值）
+            （阈值：低 &lt;{LIGHT_MID_MIN} / 中 {LIGHT_MID_MIN}~{LIGHT_HIGH_MIN} / 高 ≥{LIGHT_HIGH_MIN}，经验值，单位 lm/m²）
           </p>
           <p>
             推荐：约 {recommendLumens(level, areaM2)} lm ｜ {recommendWatts(level, eff)} W（W/L 法，{eff.toFixed(0)}L）
@@ -189,8 +191,8 @@ export default function Water({ plan }: { plan: Plan }) {
       </div>
 
       <p className="muted small" style={{ marginTop: 16 }}>
-        光照等级参考阈值流明/面积：低 {LIGHT_LUMEN_PER_M2.low.join('~')}、中 {LIGHT_LUMEN_PER_M2.mid.join('~')}、高{' '}
-        {LIGHT_LUMEN_PER_M2.high[0]}+。
+        光照等级参考区间（流明/水面面积，lm/m²）：低 {formatLightRange('low')}、中 {formatLightRange('mid')}、高{' '}
+        {formatLightRange('high')}。
       </p>
     </div>
   );
