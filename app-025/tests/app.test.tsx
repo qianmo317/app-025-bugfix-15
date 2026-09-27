@@ -145,7 +145,9 @@ describe('水质与设备页', () => {
     window.location.hash = `/plan/${plan.id}/water`;
     render(<App />);
     await screen.findByTestId('water-page');
-    // 默认流明按中光推荐 → 高光草不足
+    // 默认缸水面面积 0.27m²，10 lm 约 37 lm/m²，落入低光档
+    fireEvent.change(screen.getByTestId('light-lumens'), { target: { value: '10' } });
+    expect(screen.getByTestId('light-warnings').textContent).toContain('当前为低光档，阳性草光强不足');
     expect(screen.getByTestId('light-warnings').textContent).toContain('建议提高光强或改用低光草');
   });
 });

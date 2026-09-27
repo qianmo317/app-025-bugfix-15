@@ -19,34 +19,53 @@ function plant(name: string, lightNeed: 'low' | 'mid' | 'high'): Item {
 }
 
 describe('光照判定', () => {
-  it('流明/面积 → 低/中/高', () => {
+  it('流明/面积 → 低/中/高，边界归入较高档', () => {
     // 面积 0.5m²
-    expect(classifyLightByLumen(1200, 0.5)).toBe('low'); // 2400 lm/m²
-    expect(classifyLightByLumen(1250, 0.5)).toBe('mid'); // 2500
-    expect(classifyLightByLumen(2400, 0.5)).toBe('mid'); // 4800
-    expect(classifyLightByLumen(2600, 0.5)).toBe('high'); // 5200
+    expect(classifyLightByLumen(70, 0.5)).toBe('low'); // 140 lm/m²
+    expect(classifyLightByLumen(75, 0.5)).toBe('mid'); // 150
+    expect(classifyLightByLumen(190, 0.5)).toBe('mid'); // 380
+    expect(classifyLightByLumen(200, 0.5)).toBe('high'); // 400
   });
 
   it('推荐流明与功率随有效水量缩放', () => {
-    expect(recommendLumens('mid', 0.5)).toBe(Math.round(3750 * 0.5));
+    expect(recommendLumens('mid', 0.5)).toBe(Math.round(275 * 0.5));
+    expect(recommendLumens('high', 0.5)).toBe(Math.round(500 * 0.5));
     expect(recommendWatts('low', 100)).toBe(Math.round(0.25 * 100));
     expect(recommendWatts('high', 100)).toBe(Math.round(0.8 * 100));
   });
 
-  it('高光草配中光 → 提示改用低光草或提光，且提示爆藻风险语境', () => {
-    const r = checkLight('mid', [plant('红宫廷', 'high')]);
+  it('高光草配低光 → 明确提示低光档光强不足', () => {
+    const r = checkLight('low', [plant('红宫廷', 'high')]);
     expect(r.ok).toBe(false);
-    expect(r.warnings.some((w) => w.includes('建议提高光强或改用低光草'))).toBe(true);
+    expect(r.warnings).toHaveLength(1);
+    expect(r.warnings[0]).toContain('当前为低光档，阳性草光强不足');
+    expect(r.warnings[0]).toContain('建议提高光强或改用低光草');
   });
 
-  it('高光下阴性草 → 爆藻警告', () => {
+  it('高光草配中光 → 明确提示中光档光强不足', () => {
+    const r = checkLight('mid', [plant('红宫廷', 'high')]);
+    expect(r.ok).toBe(false);
+    expect(r.warnings).toHaveLength(1);
+    expect(r.warnings[0]).toContain('当前为中光档，阳性草光强不足');
+    expect(r.warnings[0]).toContain('建议提高光强或改用低光草');
+  });
+
+  it('高光下仅有阴性草 → 爆藻警告', () => {
     const r = checkLight('high', [plant('铁皇冠', 'low')]);
     expect(r.ok).toBe(false);
-    expect(r.warnings.some((w) => w.includes('爆藻'))).toBe(true);
+    expect(r.warnings).toHaveLength(1);
+    expect(r.warnings[0]).toContain('强光配阴性草易爆藻');
+  });
+
+  it('高光下同时有阳性草和阴性草 → 单独提示不要混养，不再报爆藻', () => {
+    const r = checkLight('high', [plant('红宫廷', 'high'), plant('铁皇冠', 'low')]);
+    expect(r.ok).toBe(false);
+    expect(r.warnings).toEqual(['高光档同时养阳性草和阴性草，光照需求冲突，不建议混养']);
   });
 
   it('匹配时不告警', () => {
     expect(checkLight('low', [plant('小水榕', 'low')]).ok).toBe(true);
+    expect(checkLight('mid', [plant('皇冠草', 'mid')]).ok).toBe(true);
     expect(checkLight('high', [plant('迷你矮珍珠', 'high')]).ok).toBe(true);
   });
 });
